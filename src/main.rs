@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 use bevy::prelude::*;
 
-mod Darts;
+mod darts;
 
 
 fn main() {
@@ -35,7 +35,7 @@ fn draw_dart_board(gizmos: &mut Gizmos){
     let mut angle: f32 = 0.;
 
 
-    for number in 0..20 {
+    for _number in 0..20 {
         let x = angle.cos() * 120.;
         let y = angle.sin() * 120.;
         gizmos.line_2d(Vec2::ZERO, Vec2::new(x, y), Color::BLACK);
@@ -45,7 +45,7 @@ fn draw_dart_board(gizmos: &mut Gizmos){
 
 }
 
-fn system(mut gizmos: Gizmos, time: Res<Time>) {
+fn system(mut gizmos: Gizmos, _time: Res<Time>) {
     draw_dart_board(&mut gizmos);
 }
 

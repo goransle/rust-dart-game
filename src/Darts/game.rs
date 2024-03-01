@@ -21,11 +21,8 @@ impl Game {
         }
 
         let rules = DartRules::new(false, false, 301);
-
-        let mut rounds = vec!();
-
-        let mut current_player = 0;
-
+        let rounds = vec!();
+        let current_player = 0;
 
         let game = Self {
             players,
@@ -35,10 +32,6 @@ impl Game {
         }; 
 
         return Ok(game);
-    }
-
-    pub fn next_player(&mut self) {
-        self.current_player = (self.current_player + 1) % self.players.len();
     }
 
     pub fn current_round(&mut self) -> Option<&mut DartRound> {
@@ -57,7 +50,7 @@ impl Game {
         const MAX_THROWS: usize = 3;
         let current_round = self.rounds.last_mut().unwrap();
 
-        for mut player in &self.players {
+        for player in &self.players {
             println!("Player: {}", player);
             let mut throws = 0;
 
@@ -86,14 +79,23 @@ impl FromStr for Game {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut players = vec!();
+        let mut rounds = vec!();
 
         for line in s.lines() {
-            let (name, score) = line.split_once(" ")
-                .ok_or(anyhow::Error::msg("Invalid input"))?;
+            match line.split_once(" ") {
+                Some((name, score)) => {
+                    // use .parse to call FromStr from Player
+                    let player = name.parse::<Player>()?; //Player::from_str(name)?;
+                    players.push(player);
 
-            let player = Player::from_str(name)?;
-
-            players.push(player);
+                    if score == "301" {
+                        rounds.push(DartRound::new(&DartRules::new(false, false, 301))?);
+                    }
+                },
+                None => {
+                    return Err(anyhow::Error::msg("Invalid input"));
+                }
+            }
         }
 
         return Game::new(players);
@@ -104,6 +106,15 @@ impl FromStr for Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_ok(result: &Result<(), anyhow::Error>) {
+        match result {
+            Ok(_) => {},
+            Err(e) => {
+                assert!(false, "Error: {}", e);
+            }
+        }
+    }
 
     #[test]
     fn test_game() {
@@ -117,7 +128,7 @@ mod tests {
         assert_eq!(game.rounds.len(), 0);
         assert_eq!(game.rules.start_score, 301);
 
-        game.advance_round();
+        assert_ok(&game.advance_round());
 
         assert_eq!(game.rounds.len(), 1);
 
@@ -134,16 +145,24 @@ mod tests {
 
         let str_from_file = fs::read_to_string("./game.txt").unwrap();
 
-        let game = Game::from_str(&str_from_file).unwrap();
+        let game = str_from_file.parse::<Game>();
 
-        assert_eq!(game.players.len(), 2);
-        assert_eq!(
-            game.players
-                .into_iter()
-                .map(|p| p.name)
-                .collect::<Vec<String>>(), 
-            vec!("Joakim", "Bengt")
-        );
+        match game {
+            Ok(game) => {
+                assert_eq!(game.players.len(), 2);
+                assert_eq!(
+                    game.players
+                    .into_iter()
+                    .map(|p| p.name)
+                    .collect::<Vec<String>>(), 
+                    vec!("Joakim", "Bengt")
+                    );
+            },
+            Err(e) => {
+                assert!(false, "Error: {}", e);
+            }
+        }
+
 
 
     }
