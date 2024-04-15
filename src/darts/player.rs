@@ -1,16 +1,26 @@
 use std::{fmt, str::FromStr};
 
+use super::round::DartRound;
+
 pub struct Player {
     pub name: String,
     pub computer: bool,
+    pub score: i32,
+    pub rounds: Vec<DartRound>
 }
 
 impl Player {
     pub fn new(name: String, computer: bool) -> Self {
         Player {
             name,
-            computer
+            computer,
+            score: 999,
+            rounds: vec!()
         }
+    }
+
+    pub fn set_score(&mut self, score: i32) {
+        self.score = score;
     }
 }
 
@@ -18,17 +28,21 @@ impl Clone for Player {
     fn clone(&self) -> Self {
         Player {
             name: self.name.clone(),
-            computer: self.computer
+            computer: self.computer,
+            score: self.score,
+            rounds: vec!()
         }
     }
 }
 
+// Lets us print the player name by writing println!("{}", player)
 impl fmt::Display for Player {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 
+// Lets us create a player from a string
 impl FromStr for Player {
     type Err = anyhow::Error;
 
@@ -43,6 +57,7 @@ impl FromStr for Player {
     }
 }
 
+// Test can be added in the same file as the code
 #[cfg(test)]
 mod tests {
     use super::*;

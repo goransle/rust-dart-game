@@ -6,21 +6,27 @@ use super::multipliers::DartMultipliers;
 
 pub struct DartRound {
     pub score: i32,
+    pub start_score: i32,
     pub throws: Vec<DartHit>,
-    pub rules: DartRules
+    pub rules: DartRules,
+    pub round_number: i32,
+    pub has_busted: bool
 }
 
 impl DartRound {
-    pub fn new(rules: &DartRules) -> Result<Self, anyhow::Error> {
+    pub fn new(rules: &DartRules, score: i32, round_number: i32 ) -> Result<Self, anyhow::Error> {
 
         if rules.start_score < 0 {
             return Err(anyhow::Error::msg("Start score must be greater than 0"));
         }
 
         let round = Self {
-            score: rules.start_score,
+            round_number,
+            score,
+            start_score: score,
             throws: vec!(),
-            rules: rules.clone()
+            rules: rules.clone(),
+            has_busted: false
         }; 
 
         return Ok(round);
@@ -28,11 +34,10 @@ impl DartRound {
 
    pub fn handle_throw(&mut self, score: &mut DartHit) -> bool {
         let score_diff = self.score - score.get_score();
-        println!("Score: {}", self.score);
-        println!("Score diff: {}", score_diff);
 
        // Always a bust
-       if self.score - score_diff < 0 {
+       if score_diff < 0 {
+           self.has_busted = true;
             return false;
        }
 
@@ -43,13 +48,11 @@ impl DartRound {
                 _ => self.score
            };
 
-           println!("Score: {}", self.score);
-
            return true;
        }
 
        // Double out
-       let has_busted =
+       self.has_busted =
            match self.rules.double_out {
                true => match score_diff {
                    0 => match score.multiplier {
@@ -62,8 +65,16 @@ impl DartRound {
                false => false
            };
 
-       if !has_busted {
-           self.score = score_diff;  
+       if self.score < 0 {
+           self.has_busted = true;
+       }
+
+       if self.has_busted {
+            println!(".......Bust!");
+       }
+
+       if !self.has_busted {
+           self.score = self.score - score_diff;  
            self.throws.push(score.clone());
 
            return true;
@@ -82,7 +93,7 @@ mod tests {
     fn test_dart_round() {
 
         let rules = DartRules::new(true, true, 301);
-        let mut round = DartRound::new(&rules).unwrap();
+        let mut round = DartRound::new(&rules, 301, 0).unwrap();
 
         // Double in should count
         let mut hit = DartHit::new(20, DartMultipliers::Double);
@@ -90,7 +101,7 @@ mod tests {
         assert_eq!(round.score, 301 - 40);
 
         let rules = &DartRules::new(true, true, 301);
-        let mut round = DartRound::new(rules).unwrap();
+        let mut round = DartRound::new(rules, 301, 0).unwrap();
 
         // Not double in should not count
         let mut hit = DartHit::new(20, DartMultipliers::Triple);
